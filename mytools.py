@@ -1,6 +1,11 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 from pyreadstat import pyreadstat
+from tabulate import tabulate
+from scipy import stats
+from scipy.stats import somersd
+import plotly.express as px
+
 plt.rcParams["font.sans-serif"] = ["SimHei"]  # 设置字体
 
 
@@ -8,6 +13,14 @@ def 读取SPSS数据文件(文件位置及名称, 是否保留标签值: bool):
     数据表, metadata = pyreadstat.read_sav(
         文件位置及名称, apply_value_formats=是否保留标签值, formats_as_ordered_category=True)
     return 数据表
+
+
+def p值判断(p: float, α=0.95):
+    """p判断"""
+    if p <= α:
+        return '拒绝虚无假设'
+    else:
+        return '接受虚无假设'
 
 
 def 相关系数判断(系数: int):
@@ -74,3 +87,97 @@ def 绘制直方图(表名):
     fig, ax2 = plt.subplots()
     ax2.bar(x, y)
     plt.show()
+
+
+def 两个无序类别变量的统计分析(数据表, 自变量, 因变量):
+    """ 对两个无序类别变量进行描述统计和推论统计，并给出辅助结论 """
+    # 计算相关系数
+    tau_y = goodmanKruska_tau_y(数据表, 自变量, 因变量)
+    # 制作交互分类表
+    交互表 = pd.crosstab(数据表[F"{自变量}"], 数据表[F"{因变量}"])
+    # 进行卡方检验
+    chi2, p, dof, ex = stats.chi2_contingency(交互表)
+
+    print(F"tau_y系数:{tau_y: 0.4f}", 相关系数判断(tau_y))
+    print(tabulate(交互表))
+    print(F"卡方值：{chi2: .2f}, p值:{p: .4f},自由度:{dof}。")
+    print(p值判断(p))
+
+
+def 两个有序类别变量的统计分析(数据表, 自变量, 因变量):
+    """ 对两个有序类别变量进行描述统计和推论统计，并给出辅助结论 """
+    x = 数据表[F"{自变量}"].cat.codes
+    y = 数据表[F"{因变量}"].cat.codes
+    result = somersd(x, y)
+    # 制作交互分类表
+    交互表 = pd.crosstab(数据表[F"{自变量}"], 数据表[F"{因变量}"])
+    d_y = result.statistic
+    p = result.pvalue
+
+    print(F"Somers dy系数:{d_y: 0.4f}", 相关系数判断(d_y))
+    print(tabulate(交互表))
+    print(F"p值: {p: .4f}")
+    print(p值判断(p))
+
+
+def 两个数值变量的统计分析(数据表, 自变量, 因变量):
+    """ 对两个数值变量进行统计分析，并给出辅助结论 """
+
+    x = 数据表[自变量]
+    y = 数据表[因变量]
+    r, p = stats.pearsonr(x, y)
+
+    fig = px.scatter(数据表, x, y, trendline='ols')
+    fig.show()
+
+    print(FR"决定系数r平方:{r*r :0.4f}")
+    print(决定系数强弱判断(r*r))
+    print(F"p值:{p: .4f}")
+    print(p值判断(p))
+
+
+def 决定系数强弱判断(决定系数: float):
+    """ 
+    <0.25       <0.06	    微弱相关或不相关
+    0.25≤≤0.5	0.06≤≤0.25	低度相关
+    0.5≤≤0.75	0.25≤≤0.56	中度相关
+    >0.75	    >0.56	     高度相关 
+    """
+    if 决定系数 > 0.56:
+        return "高度相关"
+    elif 决定系数 > 0.25:
+        return "中度相关"
+    elif 决定系数 > 0.26:
+        return "低度相关"
+    else:
+        return "微弱相关或不相关"
+
+
+def 相关比率强弱判断(相关比率: float):
+    """ 
+    小于 0.01	微弱相关或不相关
+    [0.01-0.06]	低度相关
+    [0.06-0.14]	中度相关
+    [0.14-0.99]	高度相关
+    1	        完全相关
+    """
+    if 相关比率 > 0.14:
+        return "高度相关"
+    elif 相关比率 > 0.06:
+        return "中度相关"
+    elif 相关比率 > 0.01:
+        return "低度相关"
+    else:
+        return "微弱相关或不相关"
+
+
+def 类别变量与数值变量统计分析(数据表, 类别变量, 数值变量):
+    """ 对数值变量的不同类别进行对比，并给出辅助结论 """
+    from statsmodels.formula.api import ols
+
+    fig = px.box(数据表, x=类别变量, y=数值变量)
+    fig.show()
+
+    model = ols(F'{数值变量} ~ {类别变量}', 数据表).fit()
+
+    print(F"相关比率：{model.rsquared}")
