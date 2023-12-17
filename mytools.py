@@ -95,11 +95,13 @@ def 两个无序类别变量的统计分析(数据表, 自变量, 因变量):
     tau_y = goodmanKruska_tau_y(数据表, 自变量, 因变量)
     # 制作交互分类表
     交互表 = pd.crosstab(数据表[F"{自变量}"], 数据表[F"{因变量}"])
+    交互表2 = pd.crosstab(数据表[F"{自变量}"], 数据表[F"{因变量}"],
+                       margins=True,normalize=True)
     # 进行卡方检验
     chi2, p, dof, ex = stats.chi2_contingency(交互表)
-
+    # 交互表2
     print(F"tau_y系数:{tau_y: 0.4f}", 相关系数判断(tau_y))
-    print(tabulate(交互表))
+    print(交互表2)
     print(F"卡方值：{chi2: .2f}, p值:{p: .4f},自由度:{dof}。")
     print(p值判断(p))
 
