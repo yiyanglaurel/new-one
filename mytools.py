@@ -15,8 +15,8 @@ def 读取SPSS数据文件(文件位置及名称, 是否保留标签值: bool):
     return 数据表
 
 
-def p值判断(p: float, α=0.95):
-    """p判断"""
+def p值判断(p: float, α=0.05):
+    """ p值判断 """
     if p <= α:
         return '拒绝虚无假设'
     else:
@@ -81,7 +81,7 @@ def 有序变量描述统计函数(表名, 变量名):
     return 描述统计表
 
 
-def 绘制直方图(表名):
+def 绘制柱状图(表名):
     x = 表名.index
     y = 表名['count'].values
     fig, ax2 = plt.subplots()
@@ -96,7 +96,7 @@ def 两个无序类别变量的统计分析(数据表, 自变量, 因变量):
     # 制作交互分类表
     交互表 = pd.crosstab(数据表[F"{自变量}"], 数据表[F"{因变量}"])
     交互表2 = pd.crosstab(数据表[F"{自变量}"], 数据表[F"{因变量}"],
-                       margins=True,normalize=True)
+                       margins=True, normalize=True)
     # 进行卡方检验
     chi2, p, dof, ex = stats.chi2_contingency(交互表)
     # 交互表2
@@ -118,7 +118,7 @@ def 两个有序类别变量的统计分析(数据表, 自变量, 因变量):
 
     print(F"Somers dy系数:{d_y: 0.4f}", 相关系数判断(d_y))
     print(tabulate(交互表))
-    print(F"p值: {p: .4f}")
+    print(F"p值:{p: .4f}")
     print(p值判断(p))
 
 
@@ -129,7 +129,7 @@ def 两个数值变量的统计分析(数据表, 自变量, 因变量):
     y = 数据表[因变量]
     r, p = stats.pearsonr(x, y)
 
-    fig = px.scatter(数据表, x, y, trendline='ols')
+    fig = px.scatter(数据表, x="22、对于新事物，我喜欢去尝试和体验", y="总分", trendline='ols')
     fig.show()
 
     print(FR"决定系数r平方:{r*r :0.4f}")
